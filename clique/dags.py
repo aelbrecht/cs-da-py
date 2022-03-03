@@ -58,6 +58,7 @@ def greedy_swap(k_0: set):
                     i = j
 
             k.add(i)
+        n_it += 1
     return k
 
 
@@ -98,7 +99,7 @@ def dags():
     k_i: list[set] = [set()] * len(vertices)
     for i in vertices:
         k_i[i] = greedy_swap({i})
-        if k_i[i] > k_best:
+        if len(k_i[i]) > len(k_best):
             k_best = k_i[i]
 
     # Compute s j = number of cliques in K_1,..., K_n containing j, ∀ j ∈ V ;
@@ -122,7 +123,7 @@ def dags():
             k_t = weight_greedy(k_t, w_i, {i})
             if len(k_t) > len(k_best):
                 k_best = k_t
-                print(k_best)
+                print(len(k_best), k_best)
             for j in k_t:
                 w_i[j] = w_i[j] / 2
                 if w_i[j] < (1 / (2 ** (max_weight - 1))):
