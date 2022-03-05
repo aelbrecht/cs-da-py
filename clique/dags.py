@@ -52,7 +52,7 @@ def greedy_swap(k_0: set):
             m = -1
             i = -1
             for j in tmp:
-                v = len(set(edges[j]).union(tmp))
+                v = len(set(edges[j]).intersection(tmp))
                 if v > m:
                     m = v
                     i = j
@@ -62,7 +62,7 @@ def greedy_swap(k_0: set):
     return k
 
 
-def weight_greedy(k_t: set, w_i: list[float], k_0: set):
+def weight_greedy(w_i: list[float], k_0: set):
     k_i = k_0
 
     for i in vertices:
@@ -81,7 +81,7 @@ def weight_greedy(k_t: set, w_i: list[float], k_0: set):
         m = -1
         i = -1
         for j in tmp:
-            xs = tmp.union(edges[j])
+            xs = tmp.intersection(edges[j])
             acc = 0
             for k in xs:
                 acc += w_i[k]
@@ -120,7 +120,7 @@ def dags():
     for i in us:
         w_i = [1.0] * len(vertices)
         for t in range(1, max_iter):
-            k_t = weight_greedy(k_t, w_i, {i})
+            k_t = weight_greedy(w_i, {i})
             if len(k_t) > len(k_best):
                 k_best = k_t
                 print(len(k_best), k_best)

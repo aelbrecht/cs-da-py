@@ -1,4 +1,4 @@
-def load(filename="./input/p_hat300-2.clq") -> dict[int, list[int]]:
+def load(filename="./input/brock200_2.clq") -> dict[int, list[int]]:
     vertices: dict[int, list[int]] = {}
     with open(filename) as f:
         for line in f:
