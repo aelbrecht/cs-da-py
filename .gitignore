@@ -1,3 +1,5 @@
-/clique/input
+/mcp/input
+/wvcp/input
 /.idea
 /__pycache__
+.DS_Store
