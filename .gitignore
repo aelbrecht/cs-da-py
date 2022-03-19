@@ -1,6 +1,6 @@
 /mcp/input
 /wvcp/input
 /.idea
-/__pycache__
 .DS_Store
 /venv
+**/__pycache__
