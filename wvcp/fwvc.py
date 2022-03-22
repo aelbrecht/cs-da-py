@@ -5,16 +5,12 @@ from typing import Type
 from loader import generate_graph, Graph
 
 
-def cost(c: set[int], g: Type[Graph]) -> int:
-    return sum([g.weights[v] for v in c])
+def cost(c: set[int], e_weights: list[int], g: Type[Graph]) -> int:
+    return sum([e_weights[i] for i in uncovered_edges(c, g)])
 
 
-def largest_degree(x1: int, x2: int, g: Type[Graph]):
-    if len(g.neighbors[x1]) > len(g.neighbors[x2]):
-        return x1
-    elif len(g.neighbors[x1]) < len(g.neighbors[x2]):
-        return x2
-    if g.weights[x1] > g.weights[x2]:
+def largest_degree_weight(x1: int, x2: int, g: Type[Graph]):
+    if len(g.neighbors[x1]) / g.weights[x1] > len(g.neighbors[x2]) / g.weights[x2]:
         return x1
     else:
         return x2
@@ -37,7 +33,7 @@ def construct_wvc(g: Type[Graph]) -> set[int]:
         # both endpoints of e are not in C
         if x1 not in c and x2 not in c:
             # put the endpoint with larger degree(v)/w(v) into C
-            c.add(largest_degree(x1, x2, g))
+            c.add(largest_degree_weight(x1, x2, g))
     # tries ← 0; tries < construct_tries; tries ← tries + 1
     for tries in range(0, construct_tries):
         c_bis = set()
@@ -47,7 +43,7 @@ def construct_wvc(g: Type[Graph]) -> set[int]:
             # both endpoints of e are not in C
             if x1 not in c_bis and x2 not in c_bis:
                 # put the endpoint with larger degree(v)/w(v) into C′
-                c_bis.add(largest_degree(x1, x2, g))
+                c_bis.add(largest_degree_weight(x1, x2, g))
         # C' is better than C then C <- C'
         if cost(c_bis, g) < cost(c, g):
             c = c_bis
@@ -75,8 +71,16 @@ def construct_wvc(g: Type[Graph]) -> set[int]:
 
 
 def is_edge_uncovered(c: set[int], g: Type[Graph]) -> bool:
-    # TODO
-    return True
+    for [x1, x2] in g.edges:
+        if x1 not in c and x2 not in c:
+            return True
+    return False
+
+
+def uncovered_edges(c: set[int], g: Type[Graph]) -> list[int]:
+    for i, [x1, x2] in enumerate(g.edges):
+        if x1 not in c and x2 not in c:
+            yield i
 
 
 def fast_wvc(g: Type[Graph]):
@@ -87,19 +91,19 @@ def fast_wvc(g: Type[Graph]):
     conf_change = [1] * len(g.vertices)
 
     # calculate gain and loss of vertices?
-    tabulist = set()
     start_time = time.time()
     elapsed_time = 0
+    tabulist = [0] * len(g.vertices)
     while elapsed_time < cutoff:
         elapsed_time = time.time() - start_time
 
         # choose a vertex w with minimum loss from C, breaking ties in favor of the oldest one;
         w = -1
         minimum = 1e10
-        for v in c:
-            y = loss(c, v, g)
+        for u in c:
+            y = loss(c, u, g)
             if y < minimum:
-                w = v
+                w = u
                 minimum = y
         c.remove(w)
         conf_change[w] = 0
@@ -107,32 +111,48 @@ def fast_wvc(g: Type[Graph]):
             conf_change[z] = 1
 
         # choose a vertex u with tabu[u] = 0 from C according to BMS strategy, breaking ties in favor of the oldest one;
-        # TODO
-        # C ← C \ {u};
-        # con fChange(u ) ← 0, con fChange(z ) ← 1 for each vertex z ∈ N (u );
-        # tabulist ← ∅;
+        minimum = 1e10
+        u = -1
+        k = 0
+        for i, x in enumerate(tabulist):
+            if k > 10:
+                break
+            if x == 0:
+                y = loss(c, i, g)
+                if y < minimum:
+                    u = i
+                    minimum = y
+                k += 1
+        c.remove(u)
+        conf_change[u] = 9
+        for z in g.neighbors[u]:
+            conf_change[z] = 1
 
         # some edge is uncovered by C
+        tabulist = [0] * len(g.vertices)
         while is_edge_uncovered(c, g):
             # choose a vertex v, whose con fChange(v ) = 1, with maximum gain from V \ C, breaking ties in favor of the
             # oldest one;
-            v = -1
-            for v, y in enumerate(conf_change):
+            u = -1
+            for u, y in enumerate(conf_change):
                 if y == 1:
                     break
 
-            c.remove(v)
-            tabulist.remove(v)
+            c.add(u)
+            tabulist[u] = 1
 
-            for n in g.neighbors[v]:
+            for n in g.neighbors[u]:
                 conf_change[n] = 1
 
-            # TODO
-            # w(e ) ← w(e ) + 1 for each uncovered edge e, and for its endpoints (x, y ), confChange(x ) ← 1 and
-            # confChange(y ) ← 1
+            uncovered = uncovered_edges(c, g)
+            for e in uncovered:
+                edge_w[e] += 1
+                [x, y] = g.edges[e]
+                conf_change[x] = 1
+                conf_change[y] = 1
 
         # remove redundant vertices from C;
-        if cost(c, g) < cost(c_star, g):
+        if cost(c, edge_w, g) < cost(c_star, edge_w, g):
             c_star = c
 
     return c
