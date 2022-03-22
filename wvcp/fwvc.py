@@ -9,6 +9,10 @@ def cost(c: set[int], e_weights: list[int], g: Type[Graph]) -> int:
     return sum([e_weights[i] for i in uncovered_edges(c, g)])
 
 
+def cost_vertex(c: set[int], g: Type[Graph]) -> int:
+    return sum([g.weights[v] for v in c])
+
+
 def largest_degree_weight(x1: int, x2: int, g: Type[Graph]):
     if len(g.neighbors[x1]) / g.weights[x1] > len(g.neighbors[x2]) / g.weights[x2]:
         return x1
@@ -16,14 +20,14 @@ def largest_degree_weight(x1: int, x2: int, g: Type[Graph]):
         return x2
 
 
-def d_score(c: set[int], v: int, g: Type[Graph]):
+def d_score(c: set[int], v: int, edge_w: list[int], g: Type[Graph]):
     c_bis = c.copy()
     c_bis.remove(v)
-    return cost(c, g) - cost(c_bis, g)
+    return cost(c, edge_w, g) - cost(c_bis, edge_w, g)
 
 
-def loss(c: set[int], v: int, g: Type[Graph]):
-    return abs(d_score(c, v, g)) / g.weights[v]
+def loss(c: set[int], v: int, edge_w: list[int], g: Type[Graph]):
+    return abs(d_score(c, v, edge_w, g)) / g.weights[v]
 
 
 def construct_wvc(g: Type[Graph]) -> set[int]:
@@ -45,7 +49,7 @@ def construct_wvc(g: Type[Graph]) -> set[int]:
                 # put the endpoint with larger degree(v)/w(v) into C′
                 c_bis.add(largest_degree_weight(x1, x2, g))
         # C' is better than C then C <- C'
-        if cost(c_bis, g) < cost(c, g):
+        if cost_vertex(c_bis, g) < cost_vertex(c, g):
             c = c_bis
 
     # harm_value is an array containing values for each vector
@@ -101,7 +105,7 @@ def fast_wvc(g: Type[Graph]):
         w = -1
         minimum = 1e10
         for u in c:
-            y = loss(c, u, g)
+            y = loss(c, u, edge_w, g)
             if y < minimum:
                 w = u
                 minimum = y
@@ -115,10 +119,12 @@ def fast_wvc(g: Type[Graph]):
         u = -1
         k = 0
         for i, x in enumerate(tabulist):
+            if i not in c:
+                continue
             if k > 10:
                 break
             if x == 0:
-                y = loss(c, i, g)
+                y = loss(c, i, edge_w, g)
                 if y < minimum:
                     u = i
                     minimum = y
@@ -134,9 +140,20 @@ def fast_wvc(g: Type[Graph]):
             # choose a vertex v, whose con fChange(v ) = 1, with maximum gain from V \ C, breaking ties in favor of the
             # oldest one;
             u = -1
-            for u, y in enumerate(conf_change):
+            maximum = 0
+            candidates = g.vertices.difference(c)
+            for i, y in enumerate(conf_change):
+                if i not in candidates:
+                    continue
                 if y == 1:
-                    break
+                    cost_pre = cost_vertex(c, g)
+                    c_new = c.copy()
+                    c_new.add(i)
+                    cost_ante = cost_vertex(c_new, g)
+                    gain = cost_ante - cost_pre
+                    if gain > maximum:
+                        u = i
+                        maximum = gain
 
             c.add(u)
             tabulist[u] = 1
@@ -162,4 +179,5 @@ if __name__ == '__main__':
     construct_tries = 100
     gr = generate_graph(30)
     cutoff = 15
-    fast_wvc(gr)
+    c = fast_wvc(gr)
+    print(c)
