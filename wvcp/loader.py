@@ -10,6 +10,39 @@ class Graph:
     n: int
 
 
+def load_graph(filename="./input/self-made-1") -> Type[Graph]:
+    vertices: list[int] = []
+    neighbors: list[list[int]] = []
+    edges: list[[int, int]] = []
+    weights: list[int] = []
+    with open(filename + ".vertices") as f:
+        i = 0
+        for line in f:
+            if len(line) == 0:
+                continue
+            vertices.append(i)
+            neighbors.append([])
+            weights.append(int(line.strip()))
+            i += 1
+    with open(filename + ".edges") as f:
+        for line in f:
+            if len(line) == 0:
+                continue
+            v1, v2 = [int(a) for a in line.strip().split(" ")]
+            v1 -= 1
+            v2 -= 1
+            edges.append([v1, v2])
+            neighbors[v1].append(v2)
+            neighbors[v2].append(v1)
+    g = Graph
+    g.vertices = set(vertices)
+    g.neighbors = neighbors
+    g.weights = weights
+    g.edges = edges
+    g.n = len(vertices)
+    return g
+
+
 def generate_graph(n=10) -> Type[Graph]:
     vertices: list[int] = [0]
     neighbors: list[list[int]] = [[]]

@@ -2,7 +2,7 @@ import random
 import time
 from typing import Type
 
-from loader import generate_graph, Graph
+from loader import Graph, load_graph, generate_graph
 
 
 def cost(c: set[int], e_weights: list[int], g: Type[Graph]) -> int:
@@ -23,11 +23,15 @@ def largest_degree_weight(x1: int, x2: int, g: Type[Graph]) -> int:
 def d_score(c: set[int], v: int, edge_w: list[int], g: Type[Graph]) -> int:
     c_bis = c.copy()
     c_bis.remove(v)
-    return cost(c, edge_w, g) - cost(c_bis, edge_w, g)
+    a = cost(c, edge_w, g)
+    b = cost(c_bis, edge_w, g)
+    return a - b
 
 
 def loss(c: set[int], v: int, edge_w: list[int], g: Type[Graph]) -> float:
-    return abs(d_score(c, v, edge_w, g)) / g.weights[v]
+    a = abs(d_score(c, v, edge_w, g))
+    b = g.weights[v]
+    return a / b
 
 
 def construct_wvc(g: Type[Graph]) -> set[int]:
@@ -65,7 +69,7 @@ def construct_wvc(g: Type[Graph]) -> set[int]:
         else:
             harm_value[x2] += 1
 
-    for v in c:
+    for v in c.copy():
         if harm_value[v] == 0:
             c.remove(v)
             for u in g.neighbors[v]:
