@@ -13,20 +13,20 @@ def cost_vertex(c: set[int], g: Type[Graph]) -> int:
     return sum([g.weights[v] for v in c])
 
 
-def largest_degree_weight(x1: int, x2: int, g: Type[Graph]):
+def largest_degree_weight(x1: int, x2: int, g: Type[Graph]) -> int:
     if len(g.neighbors[x1]) / g.weights[x1] > len(g.neighbors[x2]) / g.weights[x2]:
         return x1
     else:
         return x2
 
 
-def d_score(c: set[int], v: int, edge_w: list[int], g: Type[Graph]):
+def d_score(c: set[int], v: int, edge_w: list[int], g: Type[Graph]) -> int:
     c_bis = c.copy()
     c_bis.remove(v)
     return cost(c, edge_w, g) - cost(c_bis, edge_w, g)
 
 
-def loss(c: set[int], v: int, edge_w: list[int], g: Type[Graph]):
+def loss(c: set[int], v: int, edge_w: list[int], g: Type[Graph]) -> float:
     return abs(d_score(c, v, edge_w, g)) / g.weights[v]
 
 
@@ -97,7 +97,7 @@ def fast_wvc(g: Type[Graph]):
     # calculate gain and loss of vertices?
     start_time = time.time()
     elapsed_time = 0
-    tabulist = [0] * len(g.vertices)
+    tabu_list = [0] * len(g.vertices)
     while elapsed_time < cutoff:
         elapsed_time = time.time() - start_time
 
@@ -118,7 +118,7 @@ def fast_wvc(g: Type[Graph]):
         minimum = 1e10
         u = -1
         k = 0
-        for i, x in enumerate(tabulist):
+        for i, x in enumerate(tabu_list):
             if i not in c:
                 continue
             if k > 10:
@@ -130,12 +130,12 @@ def fast_wvc(g: Type[Graph]):
                     minimum = y
                 k += 1
         c.remove(u)
-        conf_change[u] = 9
+        conf_change[u] = 0
         for z in g.neighbors[u]:
             conf_change[z] = 1
 
         # some edge is uncovered by C
-        tabulist = [0] * len(g.vertices)
+        tabu_list = [0] * len(g.vertices)
         while is_edge_uncovered(c, g):
             # choose a vertex v, whose con fChange(v ) = 1, with maximum gain from V \ C, breaking ties in favor of the
             # oldest one;
@@ -156,7 +156,7 @@ def fast_wvc(g: Type[Graph]):
                         maximum = gain
 
             c.add(u)
-            tabulist[u] = 1
+            tabu_list[u] = 1
 
             for n in g.neighbors[u]:
                 conf_change[n] = 1
@@ -179,5 +179,11 @@ if __name__ == '__main__':
     construct_tries = 100
     gr = generate_graph(30)
     cutoff = 15
-    c = fast_wvc(gr)
-    print(c)
+    result = fast_wvc(gr)
+    coverage = set()
+    for vert in result:
+        coverage.add(vert)
+        for neigh in gr.neighbors[vert]:
+            coverage.add(neigh)
+
+    print(f"expected {len(gr.vertices)} got {len(coverage)} with weight {sum([gr.weights[i] for i in result])}")
