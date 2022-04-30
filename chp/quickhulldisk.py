@@ -1,10 +1,9 @@
 import math
 import random
 import sys
-from enum import Enum
 from time import perf_counter
 
-from helper import Disk, Line, Point
+from helper import Disk, Line, Point, Sliver
 from loader import load
 
 
@@ -231,13 +230,6 @@ def find_tangents_between_circles(c1: Disk, c2: Disk) -> (Line, Line):
         disk2_tangent = Line(c2, c2)  # this is correct
 
     return Line(disk1_tangent.start, disk2_tangent.start), Line(disk1_tangent.end, disk2_tangent.end)
-
-
-class Sliver(Enum):
-    SLIVER_CASE_A = 1
-    SLIVER_CASE_B = 2
-    SLIVER_CASE_C1 = 3
-    SLIVER_CASE_C2 = 4
 
 
 def regularize_sliver(disks: list[Disk], hull_p: Point, hull_q: Point, pre_apex: Disk, post_apex: Disk):

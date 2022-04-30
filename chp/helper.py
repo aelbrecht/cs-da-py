@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from enum import Enum
 
 
 class Point:
@@ -122,3 +123,10 @@ class Line:
 
     def is_point(self):
         return self.start == self.end
+
+
+class Sliver(Enum):
+    SLIVER_CASE_A = 1
+    SLIVER_CASE_B = 2
+    SLIVER_CASE_C1 = 3
+    SLIVER_CASE_C2 = 4
