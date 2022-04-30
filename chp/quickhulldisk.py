@@ -11,17 +11,17 @@ def find_left_most_point(disks: list[Disk], reverse: bool = False) -> (Disk, Poi
     sign = -1 if not reverse else 1
     best = disks[0]
     for curr in disks:
-        left_most_x = best.center().x + best.radius() * sign
-        left_curr_x = curr.center().x + curr.radius() * sign
+        left_most_x = best.x() + best.radius() * sign
+        left_curr_x = curr.x() + curr.radius() * sign
         if (left_curr_x < left_most_x and not reverse) or (left_curr_x > left_most_x and reverse):
             best = curr
         elif left_curr_x == left_most_x:
-            if (curr.center().y > best.center().y and not reverse) or (curr.center().y < best.center().y and reverse):
+            if (curr.y() > best.y() and not reverse) or (curr.y() < best.y() and reverse):
                 best = curr
-            elif curr.center().y == best.center().y and curr.radius() > best.radius():
+            elif curr.y() == best.y() and curr.radius() > best.radius():
                 best = curr
 
-    return best, Point(best.center().x + best.radius() * sign, best.center().y)
+    return best, Point(best.x() + best.radius() * sign, best.y())
 
 
 def quickhull(disks: list[Disk]) -> list[Disk]:
@@ -34,7 +34,7 @@ def quickhull(disks: list[Disk]) -> list[Disk]:
     left_set: list[Disk] = []
     right_set: list[Disk] = []
     for curr in disks:
-        d = oriented_line.signed_distance(curr.center())
+        d = oriented_line.signed_distance(curr.point())
         if d <= curr.radius():
             right_set.append(curr)
         if d >= -curr.radius():
@@ -48,9 +48,9 @@ def quickhull(disks: list[Disk]) -> list[Disk]:
     last_id = -1
     filtered: list[Disk] = []
     for d in results:
-        if d.id == last_id:
+        if d._id == last_id:
             continue
-        last_id = d.id
+        last_id = d._id
         filtered.append(d)
 
     return filtered
@@ -59,7 +59,7 @@ def quickhull(disks: list[Disk]) -> list[Disk]:
 def find_farthest_point(disk: Disk, oriented_line: Line) -> Point:
     negative = -oriented_line.normal_vector()
     res: Point = negative.unit_vector() * disk.radius()
-    farthest_point = res + disk.center()
+    farthest_point = res + disk
     return farthest_point
 
 
@@ -69,10 +69,10 @@ def find_highest_triangle_apex(disks: list[Disk], oriented_line: Line, oriented_
     largest_max_perp_dist = 0.0
     if not oriented_line.is_point():
         for curr in disks:
-            if oriented_is_support and (curr.center() == oriented_line.start or curr.center() == oriented_line.end):
+            if oriented_is_support and (curr == oriented_line.start or curr == oriented_line.end):
                 continue
 
-            max_perp_dist = curr.radius() - oriented_line.signed_distance(curr.center())
+            max_perp_dist = curr.radius() - oriented_line.signed_distance(curr)
 
             if max_perp_dist > largest_max_perp_dist:
                 largest_max_perp_dist = max_perp_dist
@@ -119,23 +119,23 @@ def pick_one_triangle_apex(candidates: list[(Point, Disk)]) -> (Point, Disk):
 
 
 def disk_is_member_of_expanded(candidate: Disk, oriented_line: Line, include_positive: bool = False) -> bool:
-    dist_line_to_disk = oriented_line.signed_distance(candidate.center())
+    dist_line_to_disk = oriented_line.signed_distance(candidate)
     orthogonal_line_at_start = oriented_line.perpendicular(oriented_line.start)
     orthogonal_line_at_end = oriented_line.perpendicular(oriented_line.end)
 
     if dist_line_to_disk <= -candidate.radius():
         # negative or on-negative
         return orthogonal_line_at_start.signed_distance(
-            candidate.center()) < -candidate.radius() and orthogonal_line_at_end.signed_distance(
-            candidate.center()) > candidate.radius()
+            candidate) < -candidate.radius() and orthogonal_line_at_end.signed_distance(
+            candidate) > candidate.radius()
     elif -candidate.radius() < dist_line_to_disk < candidate.radius():
         # crossing
         return orthogonal_line_at_start.signed_distance(
-            candidate.center()) < 0 and orthogonal_line_at_end.signed_distance(candidate.center()) > 0
+            candidate) < 0 and orthogonal_line_at_end.signed_distance(candidate) > 0
     elif include_positive and dist_line_to_disk == candidate.radius():
         # on-positive
         return orthogonal_line_at_start.signed_distance(
-            candidate.center()) < 0 and orthogonal_line_at_end.signed_distance(candidate.center()) > 0
+            candidate) < 0 and orthogonal_line_at_end.signed_distance(candidate) > 0
     else:
         # positive
         return False
@@ -164,9 +164,9 @@ def triangle_is_sliver(n_disk: int, n_front: int, n_back: int, pre_apex: Disk, p
 
 def find_oriented_tangent_line_segment(c1: Disk, c2: Disk):
     if c1.radius() == 0 and c2.radius() == 0:
-        return Line(c1.center(), c2.center())  # this is correct
+        return Line(c1, c2)  # this is correct
     tangent1, tangent2 = find_tangents_between_circles(c1, c2)
-    dist = tangent1.signed_distance(c1.center()) + tangent1.signed_distance(c2.center())
+    dist = tangent1.signed_distance(c1) + tangent1.signed_distance(c2)
     if dist > 0:
         return tangent1
     else:
@@ -177,29 +177,29 @@ def find_oriented_between_circles(c1: Disk, c2: Disk) -> (list[float], list[floa
     if c1.radius() < c2.radius():
         c1, c2 = c2, c1
 
-    c2_vector: Point = c1.center() - c2.center()
+    c2_vector: Point = c1 - c2
     r = c1.radius() - c2.radius()
     length = c2_vector.magnitude()
     sine = r / length
     cosine = math.sqrt(length * length - r * r) / length
 
-    norm1 = Point(c2_vector.x * cosine - c2_vector.y * sine, c2_vector.x * sine + c2_vector.y * cosine)
-    norm2 = Point(c2_vector.x * cosine - c2_vector.y * sine, c2_vector.y * cosine + c2_vector.x * sine)
+    norm1 = Point(c2_vector.x() * cosine - c2_vector.y() * sine, c2_vector.x() * sine + c2_vector.y() * cosine)
+    norm2 = Point(c2_vector.x() * cosine - c2_vector.y() * sine, c2_vector.y() * cosine + c2_vector.x() * sine)
     norm1 = norm1.unit_vector()
     norm2 = norm2.unit_vector()
 
-    norm1 = Point(norm1.y, -1 * norm1.x)
-    norm2 = Point(-1 * norm2.y, norm2.x)
+    norm1 = Point(norm1.y(), -1 * norm1.x())
+    norm2 = Point(-1 * norm2.y(), norm2.x())
 
-    r1 = [norm1.x, norm1.y, -1 * norm1.x * c2.center().x - norm1.y * c2.center().y + c2.radius()]
-    r2 = [norm2.x, norm2.y, -1 * norm2.x * c2.center().x - norm2.y * c2.center().y + c2.radius()]
+    r1 = [norm1.x(), norm1.y(), -1 * norm1.x() * c2.x() - norm1.y() * c2.y() + c2.radius()]
+    r2 = [norm2.x(), norm2.y(), -1 * norm2.x() * c2.x() - norm2.y() * c2.y() + c2.radius()]
 
     return r1, r2
 
 
 def find_tangent_point(circle: Disk, eq: [float, float, float]) -> Point:
-    x = circle.center().x
-    y = circle.center().y
+    x = circle.x()
+    y = circle.y()
     a = eq[0]
     b = eq[1]
     a2_b2 = a * a + b * b
@@ -221,13 +221,13 @@ def find_tangents_between_circles(c1: Disk, c2: Disk) -> (Line, Line):
     if c1.radius() != 0:
         disk1_tangent = Line(find_tangent_point(c1, t1), find_tangent_point(c1, t2))
     else:
-        disk1_tangent = Line(c1.center(), c1.center())  # this is correct
+        disk1_tangent = Line(c1, c1)  # this is correct
 
     disk2_tangent: Line
     if c2.radius() != 0:
         disk2_tangent = Line(find_tangent_point(c2, t1), find_tangent_point(c2, t2))
     else:
-        disk2_tangent = Line(c2.center(), c2.center())  # this is correct
+        disk2_tangent = Line(c2, c2)  # this is correct
 
     return Line(disk1_tangent.start, disk2_tangent.start), Line(disk1_tangent.end, disk2_tangent.end)
 
@@ -245,7 +245,7 @@ def regularize_sliver(disks: list[Disk], hull_p: Point, hull_q: Point, pre_apex:
 
     candidate_apex: Disk = candidates[0][1]
 
-    height_of_triangle = candidate_apex.radius() - supporting_tangent.signed_distance(candidate_apex.center())
+    height_of_triangle = candidate_apex.radius() - supporting_tangent.signed_distance(candidate_apex)
 
     on_positives = []
     non_positives = []
@@ -258,16 +258,16 @@ def regularize_sliver(disks: list[Disk], hull_p: Point, hull_q: Point, pre_apex:
         rm_list = []
         rm_dict = {}
         for i, c in enumerate(candidates):
-            d = c[1]
+            d: Disk = c[1]
             if d == pre_apex or d == post_apex or pre_apex.contains(d) or post_apex.contains(d):
                 rm_list.append(i)
-                rm_dict[d.id] = True
+                rm_dict[d.id()] = True
         rm_list.reverse()
         for i in rm_list:
             del candidates[i]
         rm_list = []
         for i, d in enumerate(disks):
-            if d.id in rm_dict:
+            if d.id() in rm_dict:
                 rm_list.append(i)
         rm_list.reverse()
         for i in rm_list:
@@ -354,4 +354,4 @@ if __name__ == '__main__':
         print(f"finished in {round((t1_stop - t1_start) * 1000, 3)}ms\n", )
         with open(f"./data/{fn}_sol.txt", "w+") as f:
             f.write(f"{len(result)}\n")
-            f.writelines([f"{p.id + 1}\t{p.center().x}\t{p.center().y}\t{p.radius()}\n" for p in result])
+            f.writelines([f"{p.id() + 1}\t{p.x()}\t{p.y()}\t{p.radius()}\n" for p in result])

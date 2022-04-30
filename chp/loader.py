@@ -1,76 +1,93 @@
 from __future__ import annotations
 
 import math
+import sys
 
 
 class Point:
-    x: float
-    y: float
+    _x: float
+    _y: float
 
     def __init__(self, x: float, y: float):
-        self.x = x
-        self.y = y
+        self._x = x
+        self._y = y
 
     def magnitude(self) -> float:
-        return math.sqrt(self.x * self.x + self.y * self.y)
+        return math.sqrt(self._x * self._x + self._y * self._y)
 
     def magnitude_square(self) -> float:
-        return self.x * self.x + self.y * self.y
+        return self._x * self._x + self._y * self._y
 
     def unit_vector(self) -> Point:
         m = self.magnitude()
-        return Point(self.x / m, self.y / m)
+        return Point(self._x / m, self._y / m)
 
     def distance(self, p: Point):
-        a = self.x - p.x
-        b = self.y - p.y
+        a = self._x - p._x
+        b = self._y - p._y
         return math.sqrt(a * a + b * b)
 
+    def x(self) -> float:
+        return self._x
+
+    def y(self) -> float:
+        return self._y
+
     def __str__(self):
-        return f"({self.x}, {self.y})"
+        return f"Point({self._x}, {self._y})"
 
     def __sub__(self, other: Point) -> Point:
-        return Point(self.x - other.x, self.y - other.y)
+        return Point(self._x - other._x, self._y - other._y)
 
     def dot(self, other: Point) -> float:
-        return self.x * other.y - self.y * other.x
+        return self._x * other._y - self._y * other._x
 
     def __mul__(self, scalar: float) -> Point:
-        return Point(self.x * scalar, self.y * scalar)
+        return Point(self._x * scalar, self._y * scalar)
 
     def __add__(self, other: Point) -> Point:
-        return Point(self.x + other.x, self.y + other.y)
+        return Point(self._x + other._x, self._y + other._y)
 
     def __neg__(self):
-        return Point(-self.x, -self.y)
+        return Point(-self._x, -self._y)
 
     def __eq__(self, other: Point):
-        return self.x == other.x and self.y == other.y
+        return self._x == other._x and self._y == other._y
 
 
-class Disk:
-    id: int
-    _x: float
-    _y: float
+class Disk(Point):
+    _id: int
     _r: float
 
+    def __init__(self, uid: int, x: float, y: float, radius: float):
+        super().__init__(x, y)
+        self._r = radius
+        self._id = uid
+
     def __str__(self):
-        return f"({self.id}) (r: {self._r}) at ({self._x}, {self._y})"
+        return f"Disk({self._id}) (r: {self._r}) at Point({self._x}, {self._y})"
 
     def __ne__(self, other):
-        return self.id != other.id
+        return self._id != other.id()
 
     def __eq__(self, other):
-        return self.id == other.id
+        if isinstance(other, Point):
+            return super().__eq__(other)
+        elif isinstance(other, Disk):
+            return self._id == other.id()
+        return False
 
-    def center(self) -> Point:
+    def id(self) -> int:
+        return self._id
+
+    def point(self) -> Point:
         return Point(self._x, self._y)
 
     def radius(self) -> float:
         return self._r
 
     def contains(self, other: Disk, tolerance: float = 1.0e-6) -> bool:
-        abs_center = self.center() - other.center()
+        abs_center = self.point() - other.point()
         distance = abs_center.magnitude()
         return self.radius() >= (other.radius() + distance) - tolerance
 
@@ -86,7 +103,7 @@ class Line:
         self.end = b
 
     def __str__(self):
-        return f"({self.start.x}, {self.start.y}) -> ({self.end.x}, {self.end.y})"
+        return f"({self.start.x()}, {self.start.y()}) -> ({self.end.x()}, {self.end.y()})"
 
     def signed_distance(self, p: Point):
         sp_vector = p - self.start
@@ -102,13 +119,16 @@ class Line:
 
     def normal_vector(self):
         dir_vec = self.vector()
-        return Point(-dir_vec.y, dir_vec.x)
+        return Point(-dir_vec.y(), dir_vec.x())
 
     def is_point(self):
         return self.start == self.end
 
 
-def load(filename="./input/N10.txt") -> list[Disk]:
+def load(filename=None) -> list[Disk]:
+    if filename is None:
+        print("no files specified")
+        sys.exit(1)
     disks: list[Disk] = []
     with open(filename) as f:
         i = 0
@@ -116,11 +136,8 @@ def load(filename="./input/N10.txt") -> list[Disk]:
             xs = line.split("\t")
             if len(xs) != 4:
                 continue
-            d = Disk()
-            d.id = i
-            d._x = float(xs[1])
-            d._y = float(xs[2])
-            d._r = float(xs[3])
+            uid, x, y, r = int(xs[0]), float(xs[1]), float(xs[2]), float(xs[3])
+            d = Disk(uid, x, y, r)
             disks.append(d)
             i += 1
     return disks
