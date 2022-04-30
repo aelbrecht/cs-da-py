@@ -1,5 +1,6 @@
 /mcp/input
 /wvcp/input
+/chp/data/*/*_sol.txt
 /.idea
 .DS_Store
 /venv
