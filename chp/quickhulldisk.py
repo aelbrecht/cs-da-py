@@ -4,7 +4,8 @@ import sys
 from enum import Enum
 from time import perf_counter
 
-from loader import load, Disk, Line, Point
+from helper import Disk, Line, Point
+from loader import load
 
 
 def find_left_most_point(disks: list[Disk], reverse: bool = False) -> (Disk, Point):
