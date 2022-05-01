@@ -1,5 +1,4 @@
 import math
-import random
 import sys
 from time import perf_counter
 
@@ -109,7 +108,7 @@ def find_largest_apex_disk(candidates: list[(Point, Disk)], selected: int) -> (l
 
 def pick_one_triangle_apex(candidates: list[(Point, Disk)]) -> (Point, Disk):
     # pick a random candidate
-    pick = random.randint(0, len(candidates) - 1)
+    pick = 0  # TODO: random.randint(0, len(candidates) - 1)
     triangle_apex: Point = candidates[pick][0]
     # check if this candidate isn't trash
     contained, apex_disk = find_largest_apex_disk(candidates, pick)
@@ -121,21 +120,21 @@ def pick_one_triangle_apex(candidates: list[(Point, Disk)]) -> (Point, Disk):
 
 def disk_is_member_of_expanded(candidate: Disk, oriented_line: Line) -> bool:
     dist_line_to_disk = oriented_line.signed_distance(candidate)
-    orthogonal_line_at_start = oriented_line.perpendicular(oriented_line.start)
-    orthogonal_line_at_end = oriented_line.perpendicular(oriented_line.end)
+    at_start = oriented_line.perpendicular(oriented_line.start)
+    at_end = oriented_line.perpendicular(oriented_line.end)
     if dist_line_to_disk <= -candidate.radius():
         # negative or on-negative
-        return orthogonal_line_at_start.signed_distance(
-            candidate) < -candidate.radius() and orthogonal_line_at_end.signed_distance(
+        return at_start.signed_distance(
+            candidate) < -candidate.radius() and at_end.signed_distance(
             candidate) > candidate.radius()
     elif -candidate.radius() < dist_line_to_disk < candidate.radius():
         # crossing
-        return orthogonal_line_at_start.signed_distance(
-            candidate) < 0 and orthogonal_line_at_end.signed_distance(candidate) > 0
+        return at_start.signed_distance(
+            candidate) < 0 and at_end.signed_distance(candidate) > 0
     elif dist_line_to_disk == candidate.radius():
         # on-positive
-        return orthogonal_line_at_start.signed_distance(
-            candidate) < 0 and orthogonal_line_at_end.signed_distance(candidate) > 0
+        return at_start.signed_distance(
+            candidate) < 0 and at_end.signed_distance(candidate) > 0
     else:
         # positive
         return False
@@ -264,7 +263,7 @@ def regularize_sliver(disks: list[Disk], hull_p: Point, hull_q: Point, pre_apex:
             del disks[i]
 
         # handle cases A and B
-        if len(candidates) == 1:
+        if len(candidates) == 0:
             sliver_case = Sliver.SLIVER_CASE_A
         else:
             sliver_case = Sliver.SLIVER_CASE_B
@@ -298,6 +297,8 @@ def regularize_sliver(disks: list[Disk], hull_p: Point, hull_q: Point, pre_apex:
 
 
 def find_hull(disks: list[Disk], pre_apex: Disk, post_apex: Disk, pre_hp: Point, post_hp: Point, results: list[Disk]):
+    print(pre_hp, post_hp, len(disks))
+
     if len(disks) == 1:
         results.append(pre_apex)
         return
