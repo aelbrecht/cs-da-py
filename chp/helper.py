@@ -15,17 +15,9 @@ class Point:
     def magnitude(self) -> float:
         return math.sqrt(self._x * self._x + self._y * self._y)
 
-    def magnitude_square(self) -> float:
-        return self._x * self._x + self._y * self._y
-
     def unit_vector(self) -> Point:
         m = self.magnitude()
         return Point(self._x / m, self._y / m)
-
-    def distance(self, p: Point):
-        a = self._x - p._x
-        b = self._y - p._y
-        return math.sqrt(a * a + b * b)
 
     def x(self) -> float:
         return self._x
